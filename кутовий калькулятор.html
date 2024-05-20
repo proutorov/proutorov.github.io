@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор кута місця</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Калькулятор кута місця</h1>
+    <div class="form-group">
+        <label for="distance">Дальність, км</label>
+        <input type="text" id="distance" name="distance">
+    </div>
+    <div class="form-group">
+        <label for="height">Висота, км</label>
+        <input type="text" id="height" name="height">
+    </div>
+    <div class="form-group">
+        <label for="result">Результат (градуси)</label>
+        <input type="text" id="result" name="result" readonly>
+    </div>
+    <button onclick="calculateAngle()">Обчислити</button>
+
+    <script>
+        function calculateAngle() {
+            // Отримання значень з полів форми
+            var distance = document.getElementById('distance').value;
+            var height = document.getElementById('height').value;
+
+            // Перевірка чи є значення числовими
+            if (isNaN(distance) || isNaN(height) || distance === '' || height === '') {
+                alert('Будь ласка, введіть числові значення для дальності та висоти.');
+                return;
+            }
+
+            // Перетворення значень на числа
+            distance = parseFloat(distance);
+            height = parseFloat(height);
+
+            // Обчислення кута в радіанах
+            var angleRadians = Math.atan(height / (distance ));
+            // Перетворення кута в градуси
+            var angleDegrees = angleRadians * (180 / Math.PI);
+
+            // Відображення результату
+            document.getElementById('result').value = angleDegrees.toFixed(2) /90 *12;
+        }
+    </script>
+</body>
+</html>
