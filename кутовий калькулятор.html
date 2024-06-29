@@ -44,8 +44,12 @@
         <input type="text" id="height" name="height">
     </div>
     <div class="form-group">
+        <label for="result">Результат (в градусах)</label>
+        <input type="text" id="result" name="resultDeg" readonly>
+    </div>
+    <div class="form-group">
         <label for="result">Результат (в поділках від 0 до 12)</label>
-        <input type="text" id="result" name="result" readonly>
+        <input type="text" id="result" name="resultScale" readonly>
     </div>
     <button onclick="calculateAngle()">Обчислити</button>
 
@@ -69,9 +73,12 @@
             var angleRadians = Math.atan(height / (distance ));
             // Перетворення кута в градуси
             var angleDegrees = angleRadians * (180 / Math.PI);
+            var angleScale = angleDegrees.toFixed(2) /90 *12;
+
 
             // Відображення результату
-            document.getElementById('result').value = angleDegrees.toFixed(2) /90 *12;
+            document.getElementById('resultDeg').value = angleDegrees.toFixed(2) /90 *12;
+            document.getElementById('resultScale').value = angleScale.toFixed(2);
         }
     </script>
 </body>
