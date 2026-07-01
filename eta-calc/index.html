@@ -18,7 +18,7 @@
 <style>
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: system-ui, sans-serif;
   background: #0f172a;
   color: #e2e8f0;
   display: flex;
@@ -38,10 +38,7 @@ body {
   margin-top: 12px;
 }
 
-label {
-  font-size: 13px;
-  opacity: 0.8;
-}
+label { font-size: 13px; opacity: 0.8; }
 
 .row {
   display: flex;
@@ -69,9 +66,7 @@ button {
   font-size: 14px;
 }
 
-button:active {
-  transform: scale(0.97);
-}
+button:active { transform: scale(0.97); }
 
 .small-buttons {
   display: flex;
@@ -91,14 +86,15 @@ button:active {
   margin-top: 10px;
 }
 
-.title {
-  font-size: 20px;
-  font-weight: 600;
-}
+.title { font-size: 20px; font-weight: 600; }
+.sub { font-size: 12px; opacity: 0.7; }
 
-.sub {
-  font-size: 12px;
-  opacity: 0.7;
+.radio-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 13px;
+  flex-wrap: wrap;
 }
 </style>
 </head>
@@ -107,14 +103,22 @@ button:active {
 <div class="container">
 
   <div class="title">ETA Calculator</div>
-  <div class="sub">Offline • 24h format • km / km/h</div>
+  <div class="sub">Offline • Unit flexible • 24h format</div>
 
+  <!-- DISTANCE -->
   <div class="card">
-    <label>Distance (km)</label>
+    <label>Distance</label>
+
+    <div class="radio-group">
+      <label><input type="radio" name="distUnit" value="km" checked onchange="calc()"> km</label>
+      <label><input type="radio" name="distUnit" value="m" onchange="calc()"> m</label>
+    </div>
+
     <div class="row">
       <input id="distance" type="number" step="1" inputmode="numeric" />
       <button onclick="paste('distance')">📋</button>
     </div>
+
     <div class="small-buttons">
       <button onclick="adj('distance',-10)">-10</button>
       <button onclick="adj('distance',-1)">-1</button>
@@ -123,12 +127,20 @@ button:active {
     </div>
   </div>
 
+  <!-- SPEED -->
   <div class="card">
-    <label>Speed (km/h)</label>
+    <label>Speed</label>
+
+    <div class="radio-group">
+      <label><input type="radio" name="speedUnit" value="kmh" checked onchange="calc()"> km/h</label>
+      <label><input type="radio" name="speedUnit" value="ms" onchange="calc()"> m/s</label>
+    </div>
+
     <div class="row">
       <input id="speed" type="number" step="1" inputmode="numeric" />
       <button onclick="paste('speed')">📋</button>
     </div>
+
     <div class="small-buttons">
       <button onclick="adj('speed',-10)">-10</button>
       <button onclick="adj('speed',-1)">-1</button>
@@ -137,6 +149,7 @@ button:active {
     </div>
   </div>
 
+  <!-- RESULT -->
   <div class="card">
     <div class="result" id="output">Enter values</div>
   </div>
@@ -144,6 +157,7 @@ button:active {
 </div>
 
 <script>
+
 function now() {
   return new Date();
 }
@@ -152,26 +166,44 @@ function formatTime(d) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-function calc() {
-  const dist = parseInt(document.getElementById('distance').value);
-  const speed = parseInt(document.getElementById('speed').value);
+function getUnits() {
+  const dist = document.querySelector('input[name="distUnit"]:checked').value;
+  const speed = document.querySelector('input[name="speedUnit"]:checked').value;
+  return { dist, speed };
+}
 
-  if (!dist || !speed || speed <= 0) {
+function toMeters(distance, unit) {
+  return unit === "km" ? distance * 1000 : distance;
+}
+
+function toMps(speed, unit) {
+  return unit === "kmh" ? speed / 3.6 : speed;
+}
+
+function calc() {
+  const distVal = parseInt(document.getElementById('distance').value);
+  const speedVal = parseInt(document.getElementById('speed').value);
+
+  if (!distVal || !speedVal || speedVal <= 0) {
     document.getElementById('output').innerText = "Enter valid distance & speed";
     return;
   }
 
-  const hours = dist / speed;
-  const ms = hours * 3600000;
+  const { dist, speed } = getUnits();
 
-  const arrival = new Date(now().getTime() + ms);
+  const meters = toMeters(distVal, dist);
+  const mps = toMps(speedVal, speed);
 
-  const durationH = Math.floor(hours);
-  const durationM = Math.round((hours - durationH) * 60);
+  const seconds = meters / mps;
+
+  const arrival = new Date(now().getTime() + seconds * 1000);
+
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
 
   document.getElementById('output').innerHTML =
     `Now: ${formatTime(now())}<br>` +
-    `Duration: ${durationH}h ${durationM}m<br>` +
+    `Duration: ${h}h ${m}m<br>` +
     `<b>Arrival: ${formatTime(arrival)}</b>`;
 }
 
@@ -198,18 +230,13 @@ document.querySelectorAll("input").forEach(i => {
   i.addEventListener("input", calc);
 });
 
-// --- PWA Service Worker ---
+// PWA service worker
 const swCode = `
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open('eta-cache').then(cache => cache.addAll(['./']))
-  );
+  e.waitUntil(caches.open('eta-cache').then(c => c.add('./')));
 });
-
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
-  );
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });
 `;
 
@@ -219,6 +246,7 @@ const swUrl = URL.createObjectURL(blob);
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(swUrl);
 }
+
 </script>
 
 </body>
