@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ETA Calculator</title>
+
+<link rel="manifest" href="data:application/manifest+json,{
+  \"name\":\"ETA Calculator\",
+  \"short_name\":\"ETA\",
+  \"start_url\":\".\",
+  \"display\":\"standalone\",
+  \"background_color\":\"#0f172a\",
+  \"theme_color\":\"#0f172a\",
+  \"icons\":[]
+}"/>
+
+<style>
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+  padding: 16px;
+}
+
+.card {
+  background: #111827;
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 12px;
+}
+
+label {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #0b1220;
+  color: white;
+  font-size: 18px;
+}
+
+button {
+  background: #1f2937;
+  border: 1px solid #334155;
+  color: white;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+.small-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.small-buttons button {
+  flex: 1;
+  padding: 6px;
+  font-size: 12px;
+}
+
+.result {
+  font-size: 18px;
+  margin-top: 10px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sub {
+  font-size: 12px;
+  opacity: 0.7;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+  <div class="title">ETA Calculator</div>
+  <div class="sub">Offline • 24h format • km / km/h</div>
+
+  <div class="card">
+    <label>Distance (km)</label>
+    <div class="row">
+      <input id="distance" type="number" step="1" inputmode="numeric" />
+      <button onclick="paste('distance')">📋</button>
+    </div>
+    <div class="small-buttons">
+      <button onclick="adj('distance',-10)">-10</button>
+      <button onclick="adj('distance',-1)">-1</button>
+      <button onclick="adj('distance',1)">+1</button>
+      <button onclick="adj('distance',10)">+10</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Speed (km/h)</label>
+    <div class="row">
+      <input id="speed" type="number" step="1" inputmode="numeric" />
+      <button onclick="paste('speed')">📋</button>
+    </div>
+    <div class="small-buttons">
+      <button onclick="adj('speed',-10)">-10</button>
+      <button onclick="adj('speed',-1)">-1</button>
+      <button onclick="adj('speed',1)">+1</button>
+      <button onclick="adj('speed',10)">+10</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="result" id="output">Enter values</div>
+  </div>
+
+</div>
+
+<script>
+function now() {
+  return new Date();
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function calc() {
+  const dist = parseInt(document.getElementById('distance').value);
+  const speed = parseInt(document.getElementById('speed').value);
+
+  if (!dist || !speed || speed <= 0) {
+    document.getElementById('output').innerText = "Enter valid distance & speed";
+    return;
+  }
+
+  const hours = dist / speed;
+  const ms = hours * 3600000;
+
+  const arrival = new Date(now().getTime() + ms);
+
+  const durationH = Math.floor(hours);
+  const durationM = Math.round((hours - durationH) * 60);
+
+  document.getElementById('output').innerHTML =
+    `Now: ${formatTime(now())}<br>` +
+    `Duration: ${durationH}h ${durationM}m<br>` +
+    `<b>Arrival: ${formatTime(arrival)}</b>`;
+}
+
+function adj(id, val) {
+  const el = document.getElementById(id);
+  let v = parseInt(el.value || "0");
+  v = Math.max(0, v + val);
+  el.value = v;
+  calc();
+}
+
+async function paste(id) {
+  try {
+    const text = await navigator.clipboard.readText();
+    const num = parseInt(text.replace(/\D/g,''));
+    if (!isNaN(num)) {
+      document.getElementById(id).value = num;
+      calc();
+    }
+  } catch (e) {}
+}
+
+document.querySelectorAll("input").forEach(i => {
+  i.addEventListener("input", calc);
+});
+
+// --- PWA Service Worker ---
+const swCode = `
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open('eta-cache').then(cache => cache.addAll(['./']))
+  );
+});
+
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(r => r || fetch(e.request))
+  );
+});
+`;
+
+const blob = new Blob([swCode], {type: 'application/javascript'});
+const swUrl = URL.createObjectURL(blob);
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register(swUrl);
+}
+</script>
+
+</body>
+</html>
